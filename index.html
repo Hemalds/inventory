@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Display</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .filters {
+            margin-bottom: 20px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            max-width: 800px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        select {
+            padding: 5px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="filters">
+        <select id="categoryFilter">
+            <option value="">All Categories</option>
+        </select>
+        <select id="itemFilter">
+            <option value="">All Items</option>
+        </select>
+    </div>
+    
+    <table id="inventoryTable">
+        <thead>
+            <tr>
+                <th>Category</th>
+                <th>Item</th>
+                <th>Quantity</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <script>
+        // Replace with your Google Sheets CSV URL
+        const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRXvPmdfBAXN1jjm1AA-tRf7NxDnwCDeeR2MK0qoRCQbB8nTvz9cYOpke2E9vV0QfjpscD4t-kJMR_2/pubhtml?gid=472895805&single=true';
+        
+        let allData = [];
+
+        // Fetch and process CSV data
+        async function loadData() {
+            try {
+                const response = await fetch(SHEET_URL);
+                const text = await response.text();
+                allData = parseCSV(text);
+                populateFilters();
+                displayData();
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        }
+
+        // Parse CSV data
+        function parseCSV(csv) {
+            const rows = csv.split('\n').filter(row => row.trim() !== '');
+            return rows.slice(1).map(row => {
+                const [category, item, quantity] = row.split(',');
+                return {
+                    category: category.trim(),
+                    item: item.trim(),
+                    quantity: parseInt(quantity.trim())
+                };
+            });
+        }
+
+        // Populate filter dropdowns
+        function populateFilters() {
+            const categories = [...new Set(allData.map(item => item.category))];
+            const items = [...new Set(allData.map(item => item.item))];
+
+            const categoryFilter = document.getElementById('categoryFilter');
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category;
+                option.textContent = category;
+                categoryFilter.appendChild(option);
+            });
+
+            const itemFilter = document.getElementById('itemFilter');
+            items.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item;
+                option.textContent = item;
+                itemFilter.appendChild(option);
+            });
+        }
+
+        // Display filtered data
+        function displayData() {
+            const categoryFilter = document.getElementById('categoryFilter').value;
+            const itemFilter = document.getElementById('itemFilter').value;
+            const tbody = document.querySelector('#inventoryTable tbody');
+            tbody.innerHTML = '';
+
+            const filteredData = allData.filter(item => 
+                (!categoryFilter || item.category === categoryFilter) &&
+                (!itemFilter || item.item === itemFilter)
+            );
+
+            filteredData.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.category}</td>
+                    <td>${item.item}</td>
+                    <td>${item.quantity}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Event listeners for filters
+        document.getElementById('categoryFilter').addEventListener('change', displayData);
+        document.getElementById('itemFilter').addEventListener('change', displayData);
+
+        // Initial load
+        loadData();
+    </script>
+</body>
+</html>
